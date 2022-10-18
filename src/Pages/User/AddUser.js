@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../Components/Header";
 import InputGroup from "../../Components/InputGroup";
 import Button from "../../Components/Button";
 import { db } from "../../Database/config";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 
 function AddUser() {
   const navigate = useNavigate();
@@ -22,6 +22,17 @@ function AddUser() {
     password: "",
     confirm: "",
   });
+
+  const [users, setUsers] = useState([]);
+
+  const getUsers = async () => {
+    const data = await getDocs(usersCollectionRef);
+    setUsers(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+  };
+
+  useEffect(() => {
+    getUsers(); // eslint-disable-next-line
+  }, []);
 
   const onChangeHandler = (e) => {
     let name = e.target.name;
@@ -79,18 +90,22 @@ function AddUser() {
       formValues.password !== "" &&
       formValues.confirm !== ""
     ) {
-      /* email validation */
-      const apos = formValues.email.indexOf("@");
-      const dotpos = formValues.email.lastIndexOf(".");
-      if (apos < 1 || dotpos - apos < 2) {
-        alert("Invalid email.");
-        return;
-      }
-      if (formValues.password !== formValues.confirm) {
-        alert("Confirm password does not match.");
-        return;
-      } else {
+      try {
+        /* email validation */
+        const apos = formValues.email.indexOf("@");
+        const dotpos = formValues.email.lastIndexOf(".");
+        if (apos < 1 || dotpos - apos < 2) throw new Error("Invalid email.");
+
+        if (formValues.password !== formValues.confirm)
+          throw new Error("Confirm password does not match.");
+
+        if (users.find((user) => user.email === formValues.email))
+          throw new Error("Email exist.");
+
         await createUser().then(() => navigate("/"));
+      } catch (error) {
+        alert(error.message);
+        return;
       }
     }
   };
@@ -144,6 +159,14 @@ function AddUser() {
           onChangeHandler={onChangeHandler}
         />
         <p className="formError">{formErrors.form}</p>
+        <Button
+          name="register"
+          text="Back to User List"
+          variant="light"
+          link="/"
+          className={"btn-cyan"}
+          onClick={() => navigate("/")}
+        />
         <Button
           name="register"
           text="Create"
