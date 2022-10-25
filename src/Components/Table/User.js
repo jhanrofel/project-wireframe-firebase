@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteUser } from "../../Utilitites/Slice/UserSlice";
+
 import Table from "react-bootstrap/Table";
 import BsButton from "react-bootstrap/Button";
-
 import ConfirmModal from "../Modal/ConfirmModal";
 import TableHeader from "../TableHeader";
 import EmptyRow from "../EmptyRow";
 
-import { db } from "../../Database/config";
-import { collection, doc, getDocs, deleteDoc } from "firebase/firestore";
-
 function User({ data }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const lists = useSelector((state) => state.user.data);
   const [deleteUserId, setDeleteUserId] = useState("");
-  const [deleteUser, setDeleteUser] = useState({});
   const [userDeleted, setUserDeleted] = useState("");
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
@@ -25,18 +25,10 @@ function User({ data }) {
     cancelValue: "Cancel",
   };
 
-  const usersCollectionRef = collection(db, "users");
-
   const [users, setUsers] = useState([]);
-
-  const getUsers = async () => {
-    const data = await getDocs(usersCollectionRef);
-    setUsers(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
-  };
-
   useEffect(() => {
-    getUsers(); // eslint-disable-next-line
-  }, [userDeleted]);
+    setUsers(lists);
+  }, [lists, userDeleted]);
 
   const editAction = (id) => {
     return (
@@ -63,16 +55,14 @@ function User({ data }) {
   };
 
   const onDeleteActionHandler = (id) => {
-    const userDoc = doc(db, "users", id);
     setDeleteUserId(id);
-    setDeleteUser(userDoc);
     setShow(true);
   };
 
   const onDeleteHandler = async (e) => {
     e.preventDefault();
 
-    await deleteDoc(deleteUser).then(() => {
+    dispatch(deleteUser(deleteUserId)).then(() => {
       setUserDeleted(deleteUserId);
       setShow(false);
     });

@@ -1,10 +1,15 @@
-import React from "react";
+import React,{useEffect} from "react";
 
 import TableUser from "../../Components/Table/User";
 import TableTitle from "../../Components/TableTitle";
 import Button from "../../Components/Button";
 
+import { useDispatch,useSelector } from "react-redux";
+import { fetchUsers } from "../../Utilitites/Slice/UserSlice";
+
 function ManageUser() {
+  const dispatch = useDispatch();
+
   const users = {
     name: "users",
     headers: [
@@ -15,6 +20,13 @@ function ManageUser() {
     minRows: 10,
     numCols: 3,
   };
+
+  useSelector((state) => state.user.data);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
   return (
     <>
       <TableTitle text="Users" />

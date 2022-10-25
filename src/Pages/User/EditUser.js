@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 import Header from "../../Components/Header";
 import Button from "../../Components/Button";
 import InputGroup from "../../Components/InputGroup";
-
-import { db } from "../../Database/config";
-import { doc,getDoc, updateDoc } from "firebase/firestore";
+import { editUser, fetchUserOne } from "../../Utilitites/Slice/UserSlice";
 
 function EditUser() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { state } = useLocation();
   const userId = state;
-  const userDoc = doc(db, "users",userId);
+
+  const user = useSelector((state) => state.user.dataOne);
 
   const [formValues, setFormValues] = useState({
-    fullname:  "",
-    email:  "",
+    fullname:  user.fullname || "",
+    email: user.email || "",
   });
   const [formErrors, setFormErrors] = useState({
     fullname: "",
@@ -24,19 +25,17 @@ function EditUser() {
     form: "",
   });
 
-  const getUserData = async ()=> {
-    const doc = await getDoc(userDoc);
-
-    setFormValues((state) => ({
-      ...state,
-      fullname: doc.data().fullname || "",
-      email: doc.data().email || "",
-    }));
-  };
+  useEffect(() => {
+    dispatch(fetchUserOne(userId));
+  }, [dispatch, userId]);
 
   useEffect(() => {
-    getUserData();// eslint-disable-next-line
-  }, []);
+    setFormValues((state) => ({
+      ...state,
+      fullname: user.fullname || "",
+      email: user.email || "",
+    }));
+  }, [user]);
 
   const onChangeHandler = (e) => {
     let name = e.target.name;
@@ -71,7 +70,14 @@ function EditUser() {
       }));
 
     if (formValues.fullname !== "" && formValues.email !== "") {
-      await updateDoc(userDoc,{fullname:formValues.fullname,email:formValues.email}).then(navigate("/"));
+      await dispatch(editUser({ userId, formValues }))
+        .then((res) => {
+          if (! res.error) {
+            navigate("/");
+          } else {
+            alert(res.payload);
+          }
+        });
     }
   };
 

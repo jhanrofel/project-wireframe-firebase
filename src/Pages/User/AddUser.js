@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../Components/Header";
 import InputGroup from "../../Components/InputGroup";
 import Button from "../../Components/Button";
-import { db } from "../../Database/config";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { useDispatch, useSelector } from "react-redux";
+import { postUser } from "../../Utilitites/Slice/UserSlice";
 
 function AddUser() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const usersCollectionRef = collection(db, "users");
   const [formValues, setFormValues] = useState({
     fullname: "",
     email: "",
@@ -23,16 +23,7 @@ function AddUser() {
     confirm: "",
   });
 
-  const [users, setUsers] = useState([]);
-
-  const getUsers = async () => {
-    const data = await getDocs(usersCollectionRef);
-    setUsers(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
-  };
-
-  useEffect(() => {
-    getUsers(); // eslint-disable-next-line
-  }, []);
+  const users = useSelector((state) => state.user.data);
 
   const onChangeHandler = (e) => {
     let name = e.target.name;
@@ -102,20 +93,18 @@ function AddUser() {
         if (users.find((user) => user.email === formValues.email))
           throw new Error("Email exist.");
 
-        await createUser().then(() => navigate("/"));
+        await dispatch(postUser(formValues)).then((res) => {
+          if (!res.error) {
+            navigate("/");
+          } else {
+            alert(res.payload);
+          }
+        });
       } catch (error) {
         alert(error.message);
         return;
       }
     }
-  };
-
-  const createUser = async () => {
-    await addDoc(usersCollectionRef, {
-      fullname: formValues.fullname,
-      email: formValues.email,
-      password: formValues.password,
-    });
   };
 
   return (
